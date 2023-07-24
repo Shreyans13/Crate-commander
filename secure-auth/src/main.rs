@@ -1,9 +1,13 @@
 use actix_web::middleware::Logger;
+use actix_web::web::Data;
 use actix_web::{guard, web, App, HttpResponse, HttpServer};
+mod database;
+use database::SecuredAuthDatabase;
 use env_logger::Env;
 use routes::email::post_trigger_otp;
 mod mail;
 mod routes;
+mod utils;
 use crate::routes::email::trigger_otp;
 use actix_cors::Cors;
 
@@ -14,11 +18,14 @@ async fn main() -> std::io::Result<()> {
     // middleware setup
     // mail::check(String::from("vawadil993@rc3s.com"));
 
+    let db = SecuredAuthDatabase::init().await;
+    let db_data = Data::new(db);
     env_logger::init_from_env(Env::default().default_filter_or("info"));
     // info!("can log from the test too");
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         let cors = Cors::default().supports_credentials();
         App::new()
+            .app_data(db_data.clone())
             .service(routes::health_check)
             .service(
                 web::scope("/email")
@@ -37,5 +44,3 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
-
-// .wrap(Logger::new("%a %{User-Agent}i"));
