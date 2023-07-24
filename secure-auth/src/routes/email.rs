@@ -4,6 +4,7 @@ use crate::routes::models::Email;
 use crate::utils::encrypt;
 use crate::{database::SecuredAuthDatabase, routes::error::MyError::Error};
 use actix_web::{get, post, web, HttpResponse, Responder};
+use base64::Engine;
 
 #[post("/trigger/otp")]
 pub async fn post_trigger_otp(
@@ -21,27 +22,22 @@ pub async fn post_trigger_otp(
             digits: true,
             ..Default::default()
         };
-        // println!(
-        //     "6 digit Otp = {}",
-        //     otp_generator::generate(6, &flags).unwrap()
-        // );
         let otp = otp_generator::generate(6, &flags).unwrap();
         let email = &payload.email.to_owned();
         let db_otp = db.create_otp(otp.to_string(), email.to_string()).await;
 
-        let encode_obj = encrypt(EncodedObject {
+        let encrypted_obj = encrypt(EncodedObject {
             message: "OTP sent to user".to_string(),
             id: db_otp.inserted_id.to_string(),
             check: email.to_string(),
         });
 
-        match encode_obj {
+        match encrypted_obj {
             Ok(encoded) => {
-                // println!("encode_obj = {}", String::from_utf8_lossy(&encoded));
-                // println!("encode_obj = {:?}", decrypt(encoded.to_owned()));
+                let encoded_string = base64::engine::general_purpose::STANDARD.encode(encoded);
                 send_mail(email.to_string(), otp.to_string());
                 HttpResponse::Ok().json(EmailTriggerResponse {
-                    verification_key: String::from_utf8(encoded).unwrap(),
+                    verification_key: encoded_string.to_string(),
                 })
             }
             Err(_e) => HttpResponse::Ok().json(Error {
@@ -49,9 +45,6 @@ pub async fn post_trigger_otp(
                 desc: "Email not found in request".to_string(),
             }),
         }
-        // HttpResponse::Ok().json(EmailTriggerResponse {
-        //     verification_key: "encode_obj".to_string(),
-        // })
     }
 }
 
@@ -59,4 +52,3 @@ pub async fn post_trigger_otp(
 async fn trigger_otp() -> HttpResponse {
     HttpResponse::Ok().body("OTP Triggered")
 }
-// Ok(base64::engine::general_purpose::STANDARD.encode(encoded))
