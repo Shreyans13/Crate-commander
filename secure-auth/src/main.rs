@@ -4,11 +4,11 @@ use actix_web::{guard, web, App, HttpResponse, HttpServer};
 mod database;
 use database::SecuredAuthDatabase;
 use env_logger::Env;
-use routes::email::post_trigger_otp;
+use routes::email::trigger_otp;
 mod mail;
 mod routes;
 mod utils;
-use crate::routes::email::trigger_otp;
+use crate::routes::email::verify_otp;
 use actix_cors::Cors;
 
 #[actix_web::main]
@@ -29,8 +29,8 @@ async fn main() -> std::io::Result<()> {
             .service(routes::health_check)
             .service(
                 web::scope("/email")
-                    .service(post_trigger_otp)
-                    .service(trigger_otp),
+                    .service(trigger_otp)
+                    .service(verify_otp),
             )
             .default_service(
                 web::route()

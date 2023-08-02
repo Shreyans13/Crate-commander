@@ -12,7 +12,7 @@ pub fn encrypt(data: EncodedObject) -> Result<Vec<u8>, Error> {
     // Ok(String::from_utf8(serialized_encrypted_message).unwrap())
 }
 
-pub fn _decrypt(serialized_encrypted_message: Vec<u8>) -> Result<EncodedObject, Error> {
+pub fn decrypt(serialized_encrypted_message: Vec<u8>) -> Result<EncodedObject, Error> {
     let encrypted_message = EncryptedMessage::deserialize(serialized_encrypted_message)?;
     Ok(EncodedObject::decrypt_owned(
         &encrypted_message,

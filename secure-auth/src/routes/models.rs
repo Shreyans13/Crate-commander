@@ -10,3 +10,10 @@ use serde::Deserialize;
 pub struct Email {
     pub email: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct VerifyOtpRequest {
+    pub verification_key: String,
+    pub otp: String,
+    pub check: String,
+}

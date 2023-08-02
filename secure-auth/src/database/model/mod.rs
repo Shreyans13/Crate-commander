@@ -40,3 +40,9 @@ impl SerdeEncryptSharedKey for EncodedObject {
 pub struct EmailTriggerResponse {
     pub verification_key: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmailVerifyResponse {
+    pub status: String,
+    pub message: String,
+}
