@@ -1,4 +1,5 @@
 mod utils;
+mod projector;
 
 use::clap::Parser;
 use crate::utils::config::Config;

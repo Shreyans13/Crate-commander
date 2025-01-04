@@ -1,8 +1,10 @@
 use anyhow::{ Result, anyhow, Context};
+use serde::{Serialize, Deserialize};
+
 use crate::Options;
 use std::path::PathBuf;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub enum Operation {
     Print(Option<String>),
     Add(String, String),
@@ -51,7 +53,7 @@ impl TryFrom<Vec<String>> for Operation {
         
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub operation: Operation,
     pub pwd: PathBuf,
