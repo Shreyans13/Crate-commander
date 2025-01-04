@@ -71,9 +71,14 @@ impl Projector {
         }
 
         return out;
-
     }
 
+    fn setValue(&self, key, value) {
+        self.data.projector.entry(self.config.pwd).or_default().insert(key, value);
+    }
 
+    fn deleteValue(&self, &key) {
+        self.data.projector.entry(self.config.pwd).or_default().remove(key);
+    }
 
 }
