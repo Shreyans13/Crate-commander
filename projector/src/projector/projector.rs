@@ -2,7 +2,6 @@ use std::{collections::HashMap, path::PathBuf};
 use serde::{Serialize, Deserialize};
 use std::fs;
 use anyhow::Result;
-use crate::utils::config::Config;
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,7 +42,7 @@ impl Projector {
     
 
     pub fn from_config(config: PathBuf, pwd: PathBuf) -> Self {
-        if std::fs::metadata(&config).is_ok() {
+        if fs::metadata(&config).is_ok() {
             let contents = fs::read_to_string(&config);
             let contents = contents.unwrap_or(
                 String::from("{\"projector\":{}}")
@@ -82,11 +81,11 @@ impl Projector {
     }
 
     pub fn set_value(&mut self, key: String, value: String) {
+
         self.data.projector
-            .get_mut(&self.pwd)
-            .map(|x| {
-                x.insert(key, value);
-            });
+                .entry(self.pwd.clone())
+                .or_insert_with(|| HashMap::new())
+                .insert(key.to_string(), value);
     }
 
     pub fn delete_value(&mut self, key: &String) {
@@ -99,13 +98,13 @@ impl Projector {
 
     pub fn save(&self) -> Result<()> {
         if let Some(p) = self.config.parent() {
-            if !std::fs::metadata(p).is_ok() {
-                std::fs::create_dir_all(p)?;
+            if !fs::metadata(&p).is_ok() {
+                fs::create_dir_all(p)?;
             }
         }
 
         let contents = serde_json::to_string(&self.data)?;
-        std::fs::write(&self.config, contents);
+        fs::write(&self.config, contents)?;
         return Ok(());
     }
 
@@ -121,7 +120,7 @@ mod test {
 
     use collection_macros::hashmap;
 
-    use crate::utils::config::{Config, Operation};
+    
 
     use super::{Data, Projector};
 

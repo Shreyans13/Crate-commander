@@ -26,11 +26,11 @@ fn main() -> Result<()> {
         },
         utils::config::Operation::Add(k, v) => {
             proj.set_value(k,v);
-            proj.save();
+            proj.save()?;
         },
         utils::config::Operation::Remove(k) => {
             proj.delete_value(&k);
-            proj.save();
+            proj.save()?;
         },
     }
     return Ok(());
