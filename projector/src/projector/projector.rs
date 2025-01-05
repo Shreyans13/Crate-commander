@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 use serde::{Serialize, Deserialize};
 use std::fs;
-
+use anyhow::Result;
 use crate::utils::config::Config;
 
 
@@ -12,7 +12,8 @@ struct Data {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Projector {
-    config: Config,
+    config: PathBuf,
+    pwd: PathBuf,
     data: Data,
 }
 
@@ -25,7 +26,7 @@ fn get_default_data() -> Data {
 
 impl Projector {
     pub fn get_value(&self, key: &str) -> Option<&String> {
-        let mut curr = Some(self.config.pwd.as_path());
+        let mut curr = Some(self.pwd.as_path());
         let mut out = None;
 
         while let Some(p) = curr {
@@ -41,9 +42,9 @@ impl Projector {
     }
     
 
-    pub fn from_config(config: Config) -> Self {
-        if std::fs::metadata(&config.config).is_ok() {
-            let contents = fs::read_to_string(&config.config);
+    pub fn from_config(config: PathBuf, pwd: PathBuf) -> Self {
+        if std::fs::metadata(&config).is_ok() {
+            let contents = fs::read_to_string(&config);
             let contents = contents.unwrap_or(
                 String::from("{\"projector\":{}}")
             );
@@ -52,17 +53,17 @@ impl Projector {
             let data = data.unwrap_or(get_default_data());
 
             return Projector {
-                config, data,
+                config, data, pwd
             };
         }
         return Projector {
-            config, data: get_default_data()
+            config, data: get_default_data(), pwd
         }
     }
 
 
     pub fn get_value_all(&self) -> HashMap<&String, &String>{
-        let mut curr = Some(self.config.pwd.as_path());
+        let mut curr = Some(self.pwd.as_path());
         let mut paths = vec ![];
 
         while let Some(p) = curr {
@@ -81,11 +82,31 @@ impl Projector {
     }
 
     pub fn set_value(&mut self, key: String, value: String) {
-        self.data.projector.entry(self.config.pwd.clone()).or_default().insert(key, value);
+        self.data.projector
+            .get_mut(&self.pwd)
+            .map(|x| {
+                x.insert(key, value);
+            });
     }
 
     pub fn delete_value(&mut self, key: &String) {
-        self.data.projector.entry(self.config.pwd.clone()).or_default().remove(key);
+        self.data.projector
+            .get_mut(&self.pwd)
+            .map(|x| {
+                x.remove(key);
+            });
+    }
+
+    pub fn save(&self) -> Result<()> {
+        if let Some(p) = self.config.parent() {
+            if !std::fs::metadata(p).is_ok() {
+                std::fs::create_dir_all(p)?;
+            }
+        }
+
+        let contents = serde_json::to_string(&self.data)?;
+        std::fs::write(&self.config, contents);
+        return Ok(());
     }
 
 }
@@ -125,11 +146,8 @@ mod test {
     
     fn get_projector(pwd: PathBuf) -> Projector {
         return Projector {
-            config: Config {
-                pwd,
-                config: PathBuf::from(""),
-                operation: Operation::Print(None),
-            },
+            pwd,
+            config: PathBuf::from(""),
             data: Data{
                 projector: get_data(),
             }
